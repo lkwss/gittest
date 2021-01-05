@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Insert title here</title>
+    <!-- 引入jquery.js文件 -->
+    <script type="text/javascript" src="../js/jquery.min.js"></script>
+    <!-- 引入easyui的js文件 -->
+    <script type="text/javascript" src="../js/jquery-easyui-1.5/jquery.easyui.min.js"></script>
+    <!-- 引入easyui的中文js文件 -->
+    <script type="text/javascript" src="../js/jquery-easyui-1.5/locale/easyui-lang-zh_CN.js"></script>
+
+    <!-- 引入easyui的css文件 -->
+    <link rel="stylesheet" href="../js/jquery-easyui-1.5/themes/default/easyui.css">
+    <!-- 引入easyui图标的css文件 -->
+    <link rel="stylesheet" href="../js/jquery-easyui-1.5/themes/icon.css">
+</head>
+<body>
+<div id="tools">
+    用户名:<input class="easyui-textbox" id="userName">
+    <a href="javascript:searchUser()" class="easyui-linkbutton" data-options="iconCls:'icon-search',plain:true">搜索</a>
+    <a href="javascript:openAdd()" class="easyui-linkbutton" data-options="iconCls:'icon-add',plain:true">新增</a>
+    <a href="javascript:delall()" class="easyui-linkbutton" data-options="iconCls:'icon-add',plain:true">批量删除</a>
+</div>
+<table id="userTable"></table>
+
+<!-- 定义新增的div -->
+<div id="userDialog" class="easyui-dialog" data-options="closed:true,width:500,height:400,modal:true,buttons:'#buttons'">
+    <form id="userForm" method="post">
+        <input name="id" style="display:none">
+        <table>
+            <tr>
+                <td>姓名</td>
+                <td><input class="easyui-textbox" name="stuname"></td>
+            </tr>
+            <tr>
+                <td>年龄</td>
+                <td><input class="easyui-textbox" name="age"></td>
+            </tr>
+            <tr>
+                <td>性别</td>
+                <td>
+                    <input type="radio" name="sex" value="1">男
+                    <input type="radio" name="sex" value="2">女
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+<!-- 定义对话框的按钮 -->
+<div id="buttons">
+    <a href="javascript:saveUser()" class="easyui-linkbutton" data-options="iconCls:'icon-ok',plain:true">确定</a>
+    <a href="javascript:closeDialog()" class="easyui-linkbutton" data-options="iconCls:'icon-cancel',plain:true">取消</a>
+</div>
+</body>
+<script type="text/javascript">
+    $(function(){
+        initUserTable();//初始化用户表格
+    })
+
+    function delall(){
+        var arr = $("#userTable").datagrid("getChecked");
+        var str = [];
+        for (var i = 0; i < arr.length; i++) {
+            str.push(arr[i].id);
+        }
+        $.ajax({
+            url:"../stu/delBill?array="+str,
+            success:function(){
+                $("#userTable").datagrid("load");
+                $.messager.alert("提示","删除成功","info");
+            }
+        })
+    }
+
+
+    function deletes(id) {
+        $.ajax({
+            url:"/stu/deletestu",
+            data:{id:id},
+            success:function () {
+                searchUser()
+            }
+        })
+    }
+    //打开修改弹框：回显表单数据
+    function openUpdate(userId){
+        $.ajax({
+            url:"/stu/findstubyid",
+            type:"post",
+            data:{id:userId},
+            success:function(data){
+                //回显表单数据
+                $("#userForm").form("load",data);
+                //打开弹框
+                $("#userDialog").dialog({
+                    closed:false,
+                    title:'修改用户'
+                });
+            }
+        })
+    }
+
+    //保存用户
+    function saveUser(){
+        $("#userForm").form("submit",{
+            url:"/stu/addstu",
+            success:function(){
+                //关闭弹框
+                closeDialog();
+                //刷新表格
+                searchUser();
+            }
+        });
+    }
+    //打开新增弹框
+    function openAdd(){
+        //清除表单缓存
+        $("#userForm").form("reset");
+        $("#userDialog").dialog({
+            closed:false,
+            title:'新增用户'
+        });
+
+    }
+
+    //关闭新增弹框
+    function closeDialog(){
+        $("#userDialog").dialog("close");
+    }
+
+
+    //条查
+    function searchUser(){
+        $("#userTable").datagrid("load",{
+            stuname:$("#userName").textbox("getValue")
+        });
+    }
+
+    //初始化用户表格
+    function initUserTable(){
+        $("#userTable").datagrid({
+            url:"/stu/findstudent",
+            columns:[
+                [
+                {field:"checkbox",checkbox:true},
+                {field:"id",title:"id"},
+                {field:"stuname",title:"学生名"},
+                {field:"sex",title:"性别",formatter:function (value,row,index) {
+                        return value==1?"男":"女"
+                    }},
+                {field:"age",title:"年龄"},
+                {field:"tool",title:"操作",formatter:function(value,row,index){
+                        var str = "<a href='javascript:openUpdate(\""+row.id+"\")'>修改</a> | <a href='javascript:deletes(\""+row.id+"\")'>删除</a>";
+                        return str;
+                    }}
+            ]
+            ],
+            pagination:true,
+            pageList:[2,4,6,8],
+            pageSize:2,
+            pageNumber:1,
+            fit:true,
+            toolbar:"#tools"
+        })
+    }
+</script>
+</html>
